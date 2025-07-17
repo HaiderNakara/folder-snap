@@ -1,0 +1,57 @@
+{
+  "name": "folder-snap",
+  "version": "1.0.0",
+  "description": "Snap your folders into portable text files and restore them anywhere, with gitignore support",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "folder-snap": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node dist/test.js",
+    "start": "npm run build && node dist/index.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "folder",
+    "snap",
+    "snapshot",
+    "backup",
+    "restore",
+    "portable",
+    "text",
+    "converter",
+    "gitignore",
+    "file-system",
+    "cli",
+    "archive"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "ignore": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/folder-text-converter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/folder-text-converter/issues"
+  },
+  "homepage": "https://github.com/yourusername/folder-text-converter#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}
