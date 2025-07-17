@@ -8,7 +8,10 @@ export interface FileItem {
   type: 'file';
   path: string;
   name: string;
-  content: string;
+  content?: string; // Legacy format
+  encoding?: 'utf8' | 'base64'; // Legacy format
+  contentFile?: string; // v3 format - reference to separate content file
+  contentIndex?: number; // Internal index for content file generation
   size: number;
 }
 
@@ -25,6 +28,7 @@ export interface SnapMetadata {
   sourceFolder: string;
   totalFiles: number;
   totalDirectories: number;
+  version?: string;
 }
 
 export interface SnapData {
@@ -45,4 +49,4 @@ export interface SnapResult {
   outputFolder?: string;
   stats?: SnapMetadata;
   error?: string;
-} 
+}
