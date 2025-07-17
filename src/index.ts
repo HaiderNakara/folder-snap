@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as fs from 'fs';
 import * as path from 'path';
 import ignore from 'ignore';
@@ -87,7 +89,18 @@ export class FolderSnap {
         const subStructure = this.readFolderStructure(itemPath, basePath);
         structure.push(...subStructure);
       } else {
-        const content = fs.readFileSync(itemPath, this.options.encoding);
+        // Read file content as buffer first to handle binary files properly
+        const buffer = fs.readFileSync(itemPath);
+        let content: string;
+
+        try {
+          // Try to decode as UTF-8
+          content = buffer.toString('utf8');
+        } catch (error) {
+          // If UTF-8 fails, use base64 encoding for binary files
+          content = buffer.toString('base64');
+        }
+
         structure.push({
           type: 'file',
           path: relativePath,
@@ -126,8 +139,16 @@ export class FolderSnap {
       textContent += `# Source: ${metadata.sourceFolder}\n`;
       textContent += `# Files: ${metadata.totalFiles}, Directories: ${metadata.totalDirectories}\n\n`;
 
+      // Validate JSON before writing
+      const jsonString = JSON.stringify(output, null, 2);
+      try {
+        JSON.parse(jsonString); // Validate that the JSON is valid
+      } catch (error) {
+        throw new Error(`Generated invalid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+
       textContent += `<FOLDER_SNAP_START>\n`;
-      textContent += JSON.stringify(output, null, 2);
+      textContent += jsonString;
       textContent += `\n<FOLDER_SNAP_END>\n`;
 
       fs.writeFileSync(outputPath, textContent, this.options.encoding);
@@ -169,7 +190,17 @@ export class FolderSnap {
       }
 
       const jsonContent = textContent.substring(startIndex + startMarker.length, endIndex).trim();
-      const data: SnapData = JSON.parse(jsonContent);
+
+      // Try to parse JSON with better error handling
+      let data: SnapData;
+      try {
+        data = JSON.parse(jsonContent);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        console.error('JSON Content Length:', jsonContent.length);
+        console.error('JSON Content Preview:', jsonContent.substring(0, 200) + '...');
+        throw new Error(`Failed to parse JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      }
 
       // Create output folder if it doesn't exist
       if (!fs.existsSync(outputFolder)) {
@@ -194,7 +225,27 @@ export class FolderSnap {
           fs.mkdirSync(fileDir, { recursive: true });
         }
 
-        fs.writeFileSync(filePath, file.content, this.options.encoding);
+        // Handle content based on whether it's base64 encoded or plain text
+        if (file.content && file.content.length > 0) {
+          // Check if content looks like base64 (contains only base64 characters and is reasonably long)
+          const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+          if (base64Regex.test(file.content) && file.content.length > 100) {
+            // Try to decode as base64
+            try {
+              const buffer = Buffer.from(file.content, 'base64');
+              fs.writeFileSync(filePath, buffer);
+            } catch (error) {
+              // If base64 decode fails, write as plain text
+              fs.writeFileSync(filePath, file.content, this.options.encoding);
+            }
+          } else {
+            // Write as plain text
+            fs.writeFileSync(filePath, file.content, this.options.encoding);
+          }
+        } else {
+          // Empty file
+          fs.writeFileSync(filePath, '', this.options.encoding);
+        }
       }
 
       console.log(`✅ Snap file restored to folder: ${outputFolder}`);
